@@ -67,7 +67,7 @@ const AddKeywordButton = styled.button`
 `;
 
 function LinkItem({ link, onKeywordRemove, onKeywordAdd }) {
-  const { url, title, description, keywords } = link;
+  const { image_url, title, description, keywords } = link;
   const [newKeyword, setNewKeyword] = useState("");
 
   const handleKeywordRemove = (keyword) => {
@@ -89,7 +89,7 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd }) {
 
   return (
     <ItemContainer>
-      <Thumbnail src={url} alt={title} />
+      {image_url && <Thumbnail src={image_url} alt={title} />}
       <Title>{title}</Title>
       <Description>{description}</Description>
       <KeywordsContainer>
