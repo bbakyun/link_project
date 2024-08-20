@@ -122,7 +122,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = r'C:\Users\king7\OneDrive\문서\GitHub\link_project'
+STATIC_ROOT = '/home/ubuntu/link_project/staticfiles/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
