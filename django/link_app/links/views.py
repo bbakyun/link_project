@@ -28,7 +28,7 @@ except LookupError:
 
 model_dir = "lcw99/t5-base-korean-text-summary"
 tokenizer_t5 = AutoTokenizer.from_pretrained(model_dir)
-model_t5 = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
+model_t5 = AutoModelForSeq2SeqLM.from_pretrained(model_dir, device_map ="cpu")
 model_sbert = SentenceTransformer('sentence-transformers/xlm-r-100langs-bert-base-nli-stsb-mean-tokens')
 
 max_input_length = 512
@@ -70,7 +70,7 @@ def keyword_func(doc, top_n, nr_candidates):
 def summarization(text):
     inputs = ["summarize: " + text]
     inputs = tokenizer_t5(inputs, max_length=max_input_length, truncation=True, return_tensors="pt")
-    output = model_t5.generate(**inputs, num_beams=8, max_length=100, length_penalty=2.0, num_return_sequences=1, no_repeat_ngram_size=2)
+    output = model_t5.generate(**inputs, num_beams=2, max_length=100, length_penalty=2.0, num_return_sequences=1, no_repeat_ngram_size=2, batch_size=1)
     decoded_output = tokenizer_t5.batch_decode(output, skip_special_tokens=True)[0]
     predicted_title = nltk.sent_tokenize(decoded_output.strip())[0]
     return predicted_title
