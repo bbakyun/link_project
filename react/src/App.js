@@ -294,14 +294,14 @@ function App() {
     <AppContainer>
       <GlobalStyle />
       <Header>My Links</Header>
-      <Separator />
+      {/* <Separator />
       <UrlInput
         type="text"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Enter URL"
       />
-      <SubmitButton onClick={handleUrlSubmit}>Submit</SubmitButton>
+      <SubmitButton onClick={handleUrlSubmit}>Submit</SubmitButton> */}
       <Separator />
       <Select value={keyword} onChange={(e) => setKeyword(e.target.value)}>
         <option value="">All</option>

@@ -39,7 +39,7 @@ def keyword_func(doc, top_n, nr_candidates):
     tokenized_nouns = ' '.join([word[0] for word in tokenized_doc if word[1] == 'Noun'])
     
     if not tokenized_nouns.strip():
-        return ["비어있지롱~"]  
+        return ["직접 채워주세요"]  
     
     n_gram_range = (1, 2)
     count = CountVectorizer(ngram_range=n_gram_range)
@@ -48,7 +48,7 @@ def keyword_func(doc, top_n, nr_candidates):
         candidates = count.get_feature_names_out()
     except ValueError as e:
         logger.error("Error in CountVectorizer: %s", e)
-        return ["비어있지롱~"]  
+        return ["직접 채워주세요"]  
     
     doc_embedding = model_sbert.encode([doc])
     candidate_embeddings = model_sbert.encode(candidates)
@@ -113,8 +113,8 @@ class LinkViewSet(viewsets.ModelViewSet):
             if not text_content.strip():
                 return Response({
                     'title': title,
-                    'summary': "비어있지롱~",
-                    'keywords': ["비어있지롱~"],
+                    'summary': "직접 채워주세요",
+                    'keywords': ["직접 채워주세요"],
                     'image_url': image_url
                 })
             
