@@ -66,8 +66,19 @@ const AddKeywordButton = styled.button`
   cursor: pointer;
 `;
 
-function LinkItem({ link, onKeywordRemove, onKeywordAdd }) {
-  const { image_url, title, description, keywords } = link;
+const DeleteButton = styled.button`
+  background-color: #ff0000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  cursor: pointer;
+`;
+
+function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
+  const { id, image_url, title, description, keywords } = link;
   const [newKeyword, setNewKeyword] = useState("");
 
   const handleKeywordRemove = (keyword) => {
@@ -84,6 +95,12 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd }) {
     ) {
       onKeywordAdd(link, newKeyword);
       setNewKeyword("");
+    }
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`정말로 이 링크를 삭제하시겠습니까?`)) {
+      onDelete(id);
     }
   };
 
@@ -108,6 +125,7 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd }) {
       <AddKeywordButton onClick={handleKeywordAdd}>
         Add Keyword
       </AddKeywordButton>
+      <DeleteButton onClick={handleDelete}>Delete Link</DeleteButton>
     </ItemContainer>
   );
 }

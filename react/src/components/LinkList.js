@@ -8,7 +8,7 @@ const ListContainer = styled.div`
   justify-content: center;
 `;
 
-function LinkList({ links, onKeywordRemove, onKeywordAdd }) {
+function LinkList({ links, onKeywordRemove, onKeywordAdd, onDelete }) {
   return (
     <ListContainer>
       {links.map((link, index) => (
@@ -17,6 +17,7 @@ function LinkList({ links, onKeywordRemove, onKeywordAdd }) {
           link={link}
           onKeywordRemove={onKeywordRemove}
           onKeywordAdd={onKeywordAdd}
+          onDelete={onDelete}
         />
       ))}
     </ListContainer>

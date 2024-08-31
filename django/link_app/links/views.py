@@ -28,7 +28,7 @@ except LookupError:
 
 model_dir = "lcw99/t5-base-korean-text-summary"
 tokenizer_t5 = AutoTokenizer.from_pretrained(model_dir)
-model_t5 = AutoModelForSeq2SeqLM.from_pretrained(model_dir, device_map ="cpu")
+model_t5 = AutoModelForSeq2SeqLM.from_pretrained(model_dir, device_map="cpu")
 model_sbert = SentenceTransformer('sentence-transformers/xlm-r-100langs-bert-base-nli-stsb-mean-tokens')
 
 max_input_length = 512
@@ -70,7 +70,7 @@ def keyword_func(doc, top_n, nr_candidates):
 def summarization(text):
     inputs = ["summarize: " + text]
     inputs = tokenizer_t5(inputs, max_length=max_input_length, truncation=True, return_tensors="pt")
-    output = model_t5.generate(**inputs, num_beams=2, max_length=100, length_penalty=2.0, num_return_sequences=1, no_repeat_ngram_size=2, batch_size=1)
+    output = model_t5.generate(**inputs, num_beams=2, max_length=100, length_penalty=2.0, num_return_sequences=1, no_repeat_ngram_size=2)
     decoded_output = tokenizer_t5.batch_decode(output, skip_special_tokens=True)[0]
     predicted_title = nltk.sent_tokenize(decoded_output.strip())[0]
     return predicted_title
@@ -85,23 +85,62 @@ class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
     serializer_class = LinkSerializer
 
-    @action(detail=False, methods=['post'])
-    def summarize(self, request):
-        input_text = request.data.get('content', '')
-        if not input_text:
-            return Response({'error': 'Content is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        keyword_list = keyword_func(input_text, top_n=3, nr_candidates=24)
-        summary_result = summarization(input_text)
-        return Response({'summary': summary_result, 'keyword': keyword_list})
+    def create(self, request, *args, **kwargs):
+        url = request.data.get('url')
+        title = request.data.get('title')
+        description = request.data.get('description')
+        keywords = request.data.get('keywords')
+        image_url = request.data.get('image_url')
+
+        try:
+            # 이미 존재하는 링크가 있는지 확인
+            existing_link = Link.objects.filter(url=url).first()
+            if existing_link:
+                return Response({
+                    'message': 'Link already exists!',
+                    'link_id': existing_link.id,
+                    'title': existing_link.title,
+                    'description': existing_link.description,
+                    'keywords': existing_link.keywords,
+                    'image_url': existing_link.image_url
+                }, status=status.HTTP_200_OK)
+
+            # 새 링크 생성
+            link = Link.objects.create(url=url, title=title, description=description, keywords=keywords, image_url=image_url)
+            link.save()
+            return Response({'message': 'Link added successfully!', 'link_id': link.id}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error("Error adding link: %s", e)
+            return Response({'error': 'An error occurred while adding the link.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            link = self.get_object()
+            link.delete()
+            return Response({'message': 'Link deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error("Error deleting link: %s", e)
+            return Response({'error': 'An error occurred while deleting the link.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'])
     def extract_from_url(self, request):
         url = request.data.get('url', '')
         if not url:
             return Response({'error': 'URL is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 먼저 데이터베이스에서 해당 URL이 있는지 확인
+        existing_link = Link.objects.filter(url=url).first()
+        if existing_link:
+            # 이미 존재하는 링크 데이터를 반환
+            return Response({
+                'title': existing_link.title,
+                'summary': existing_link.description,
+                'keywords': existing_link.keywords,
+                'image_url': existing_link.image_url
+            }, status=status.HTTP_200_OK)
         
         try:
+            # URL에서 콘텐츠를 추출하여 요약 및 키워드 생성
             response = requests.get(url)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -121,17 +160,7 @@ class LinkViewSet(viewsets.ModelViewSet):
             keyword_list = keyword_func(text_content, top_n=3, nr_candidates=24)
             summary_result = summarization(text_content)
 
-            # 데이터베이스에 저장
-            link = Link.objects.create(
-                url=url,
-                title=title,
-                description=summary_result,
-                image_url=image_url,
-                keywords=keyword_list
-            )
-
             return Response({
-                'id': link.id,
                 'title': title,
                 'summary': summary_result,
                 'keywords': keyword_list,
