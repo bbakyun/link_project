@@ -3,6 +3,24 @@ import styled, { createGlobalStyle } from "styled-components";
 import LinkList from "./components/LinkList";
 import axios from "axios";
 
+// UUID 생성 및 로컬 스토리지에서 가져오는 함수
+function generateUUID() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+function getUUID() {
+  let uuid = localStorage.getItem("user_uuid");
+  if (!uuid) {
+    uuid = generateUUID();
+    localStorage.setItem("user_uuid", uuid);
+  }
+  return uuid;
+}
+
 const GlobalStyle = createGlobalStyle`
   body {
     background-color: #000;
@@ -39,47 +57,28 @@ const Select = styled.select`
   margin-bottom: 20px;
 `;
 
-const UrlInput = styled.input`
-  background-color: #333;
-  color: #fff;
-  border: 1px solid #555;
-  padding: 10px;
-  font-size: 1rem;
-  margin-bottom: 20px;
-  width: 60%;
-`;
-
-const SubmitButton = styled.button`
-  background-color: #ffeb3b;
-  color: #000;
-  border: none;
-  padding: 10px 20px;
-  font-size: 1rem;
-  cursor: pointer;
-`;
-
 function App() {
   const [links, setLinks] = useState([]);
   const [keyword, setKeyword] = useState("");
-  const [url, setUrl] = useState("");
+  const userUUID = getUUID(); // 사용자 UUID 가져오기
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/api/links/")
+      .get(`http://192.168.1.108:8000/api/links/?user_uuid=${userUUID}`)
       .then((response) => {
         setLinks(response.data);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
       });
-  }, []);
+  }, [userUUID]);
 
   const handleKeywordRemove = (link, keyword) => {
     const updatedKeywords = link.keywords.filter((kw) => kw !== keyword);
     const updatedLink = { ...link, keywords: updatedKeywords };
 
     axios
-      .put(`http://localhost:8000/api/links/${link.id}/`, updatedLink)
+      .put(`http://192.168.1.108:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
       })
@@ -92,7 +91,7 @@ function App() {
     const updatedLink = { ...link, keywords: [...link.keywords, newKeyword] };
 
     axios
-      .put(`http://localhost:8000/api/links/${link.id}/`, updatedLink)
+      .put(`http://192.168.1.108:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
       })
@@ -101,22 +100,9 @@ function App() {
       });
   };
 
-  const handleUrlSubmit = () => {
-    axios
-      .post("http://localhost:8000/api/links/extract_from_url/", { url })
-      .then((response) => {
-        // URL에서 데이터를 추출하여 바로 저장하지 않고, Add to My Links 버튼 클릭 시 저장하도록 합니다.
-        setLinks([...links, response.data]);
-        setUrl("");
-      })
-      .catch((error) => {
-        console.error("Error extracting data from URL:", error);
-      });
-  };
-
   const handleDelete = (id) => {
     axios
-      .delete(`http://localhost:8000/api/links/${id}/`)
+      .delete(`http://192.168.1.108:8000/api/links/${id}/`)
       .then(() => {
         setLinks(links.filter((link) => link.id !== id));
       })
@@ -135,15 +121,6 @@ function App() {
     <AppContainer>
       <GlobalStyle />
       <Header>My Links</Header>
-      <Separator />
-      <UrlInput
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter URL"
-      />
-      <SubmitButton onClick={handleUrlSubmit}>Submit</SubmitButton>
-      <Separator />
       <Select value={keyword} onChange={(e) => setKeyword(e.target.value)}>
         <option value="">All</option>
         {uniqueKeywords.map((kw, index) => (

@@ -86,6 +86,10 @@ class LinkViewSet(viewsets.ModelViewSet):
     serializer_class = LinkSerializer
 
     def create(self, request, *args, **kwargs):
+        user_uuid = request.data.get('user_uuid')
+        if not user_uuid:
+            return Response({'error': 'UUID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
         url = request.data.get('url')
         title = request.data.get('title')
         description = request.data.get('description')
@@ -93,8 +97,8 @@ class LinkViewSet(viewsets.ModelViewSet):
         image_url = request.data.get('image_url')
 
         try:
-            # 이미 존재하는 링크가 있는지 확인
-            existing_link = Link.objects.filter(url=url).first()
+            # URL과 사용자 UUID 조합이 이미 있는지 확인
+            existing_link = Link.objects.filter(url=url, user_uuid=user_uuid).first()
             if existing_link:
                 return Response({
                     'message': 'Link already exists!',
@@ -105,13 +109,14 @@ class LinkViewSet(viewsets.ModelViewSet):
                     'image_url': existing_link.image_url
                 }, status=status.HTTP_200_OK)
 
-            # 새 링크 생성
-            link = Link.objects.create(url=url, title=title, description=description, keywords=keywords, image_url=image_url)
+            # 새로운 링크 생성
+            link = Link.objects.create(url=url, title=title, description=description, keywords=keywords, image_url=image_url, user_uuid=user_uuid)
             link.save()
             return Response({'message': 'Link added successfully!', 'link_id': link.id}, status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error("Error adding link: %s", e)
             return Response({'error': 'An error occurred while adding the link.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -125,11 +130,20 @@ class LinkViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def extract_from_url(self, request):
         url = request.data.get('url', '')
+        user_uuid = request.data.get('user_uuid', None)
+
+        # 디버그 로그 추가
+        logger.debug(f"Received URL: {url}")
+        logger.debug(f"Received UUID: {user_uuid}")
+
         if not url:
             return Response({'error': 'URL is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        if not user_uuid:
+            return Response({'error': 'User UUID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
         # 먼저 데이터베이스에서 해당 URL이 있는지 확인
-        existing_link = Link.objects.filter(url=url).first()
+        existing_link = Link.objects.filter(url=url, user_uuid=user_uuid).first()
         if existing_link:
             # 이미 존재하는 링크 데이터를 반환
             return Response({
@@ -138,7 +152,7 @@ class LinkViewSet(viewsets.ModelViewSet):
                 'keywords': existing_link.keywords,
                 'image_url': existing_link.image_url
             }, status=status.HTTP_200_OK)
-        
+
         try:
             # URL에서 콘텐츠를 추출하여 요약 및 키워드 생성
             response = requests.get(url)
@@ -148,7 +162,7 @@ class LinkViewSet(viewsets.ModelViewSet):
             paragraphs = soup.find_all('p')
             text_content = ' '.join([para.get_text() for para in paragraphs])
             image_url = get_image_url(soup)
-            
+
             if not text_content.strip():
                 return Response({
                     'title': title,
@@ -156,7 +170,7 @@ class LinkViewSet(viewsets.ModelViewSet):
                     'keywords': ["직접 채워주세요"],
                     'image_url': image_url
                 })
-            
+
             keyword_list = keyword_func(text_content, top_n=3, nr_candidates=24)
             summary_result = summarization(text_content)
 
@@ -173,3 +187,4 @@ class LinkViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error("Unexpected error: %s", e)
             return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

@@ -6,14 +6,18 @@ const ItemContainer = styled.div`
   border-radius: 8px;
   padding: 10px;
   margin: 10px;
-  width: 200px;
+  width: 250px; /* 박스의 고정된 너비 설정 */
   text-align: left;
   background-color: #222;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `;
 
 const Thumbnail = styled.img`
   width: 100%;
-  height: auto;
+  height: 150px; /* 썸네일 고정 높이 설정 */
+  object-fit: cover; /* 썸네일 비율을 유지하며 크기 조정 */
   border-radius: 4px;
 `;
 
@@ -21,18 +25,21 @@ const Title = styled.h2`
   font-size: 1.2rem;
   color: #ffeb3b;
   margin: 10px 0;
+  white-space: normal; /* 여러 줄로 표시될 수 있도록 설정 */
 `;
 
 const Description = styled.p`
   font-size: 0.9rem;
   margin: 10px 0;
   color: #fff;
+  overflow: hidden;
 `;
 
 const KeywordsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  margin-top: auto;
 `;
 
 const Keyword = styled.span`
@@ -99,7 +106,7 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
   };
 
   const handleDelete = () => {
-    if (window.confirm(`정말로 이 링크를 삭제하시겠습니까?`)) {
+    if (window.confirm("이 링크를 삭제하시겠습니까?")) {
       onDelete(id);
     }
   };

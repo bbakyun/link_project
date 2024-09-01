@@ -1,17 +1,36 @@
+function generateUUID() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+// 로컬 스토리지에서 UUID를 가져오거나 생성
+function getUUID() {
+  let uuid = localStorage.getItem("user_uuid");
+  if (!uuid) {
+    uuid = generateUUID();
+    localStorage.setItem("user_uuid", uuid);
+  }
+  return uuid;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const addButton = document.getElementById("add-button");
   const mylinksButton = document.getElementById("mylinks-button");
+  const userUUID = getUUID();
 
   // 현재 탭의 URL을 가져와 Django 서버에 요청
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const url = tabs[0].url;
 
-    fetch("http://127.0.0.1:8000/api/extract_from_url/", {
+    fetch("http://192.168.1.108:8000/api/extract_from_url/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, user_uuid: userUUID }), // user_uuid 추가
     })
       .then((response) => {
         if (!response.ok) {
@@ -27,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
           data.image_url || "default-thumbnail.png";
 
         const keywordsDiv = document.getElementById("keywords");
-        keywordsDiv.innerHTML = ""; // Clear existing content
+        keywordsDiv.innerHTML = ""; // 기존 내용을 지움
         data.keywords.forEach((keyword) => {
           const keywordButton = document.createElement("button");
           keywordButton.className = "keyword-button";
@@ -35,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
           keywordsDiv.appendChild(keywordButton);
         });
 
-        // 데이터베이스에 저장할 데이터 준비
+        // "Add to My Links" 버튼 클릭 시 데이터 저장
         addButton.addEventListener("click", () => {
           const title = document.getElementById("title").innerText;
           const description = document.getElementById("description").innerText;
@@ -44,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementsByClassName("keyword-button")
           ).map((button) => button.innerText);
 
-          fetch("http://127.0.0.1:8000/api/links/", {
+          fetch("http://192.168.1.108:8000/api/links/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -55,6 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
               description,
               keywords,
               image_url,
+              user_uuid: userUUID, // user_uuid 포함
             }),
           })
             .then((response) => {
@@ -64,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
               return response.json();
             })
             .then((data) => {
-              alert("Link added successfully!");
+              alert("당신의 마음속에 저장 완료♥");
             })
             .catch((error) => {
               console.error("Error adding link:", error);
@@ -78,6 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // "My Links" 버튼 클릭 시 React 앱으로 이동
   mylinksButton.addEventListener("click", () => {
-    window.open("http://localhost:3000");
+    window.open("http://192.168.1.108:3000");
   });
 });

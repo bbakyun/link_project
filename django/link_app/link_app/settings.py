@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-z8uq2hh0)u^sv-4%fm0x(n=5_x$eq+t0)ab6!*_9kmtcfv(o5x
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True  # 개발 중이므로 True로 변경
 
-ALLOWED_HOSTS = ['43.203.215.42', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['43.203.215.42', 'localhost', '127.0.0.1', '192.168.1.108']
 
 
 # Application definition
@@ -45,7 +45,7 @@ MIDDLEWARE = [
 # 로컬 React 앱과 크롬 익스텐션을 허용
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",  # 추가된 부분
+    "http://127.0.0.1:3000",  
 ]
 
 ROOT_URLCONF = 'link_app.urls'
