@@ -85,6 +85,12 @@ class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
     serializer_class = LinkSerializer
 
+    def get_queryset(self):
+        user_uuid = self.request.query_params.get('user_uuid')
+        if user_uuid:
+            return Link.objects.filter(user_uuid=user_uuid)
+        return super().get_queryset()
+
     def create(self, request, *args, **kwargs):
         user_uuid = request.data.get('user_uuid')
         if not user_uuid:
@@ -116,7 +122,6 @@ class LinkViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error("Error adding link: %s", e)
             return Response({'error': 'An error occurred while adding the link.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -187,4 +192,3 @@ class LinkViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error("Unexpected error: %s", e)
             return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-

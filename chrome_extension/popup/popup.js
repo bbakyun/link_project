@@ -98,6 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // "My Links" 버튼 클릭 시 React 앱으로 이동
   mylinksButton.addEventListener("click", () => {
-    window.open("http://192.168.1.108:3000");
+    window.open(`http://192.168.1.108:3000?user_uuid=${userUUID}`);
   });
 });

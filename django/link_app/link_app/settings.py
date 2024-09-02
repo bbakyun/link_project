@@ -45,7 +45,8 @@ MIDDLEWARE = [
 # 로컬 React 앱과 크롬 익스텐션을 허용
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",  
+    "http://127.0.0.1:3000",
+    "http://192.168.1.108:3000",  
 ]
 
 ROOT_URLCONF = 'link_app.urls'

@@ -3,24 +3,6 @@ import styled, { createGlobalStyle } from "styled-components";
 import LinkList from "./components/LinkList";
 import axios from "axios";
 
-// UUID 생성 및 로컬 스토리지에서 가져오는 함수
-function generateUUID() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-    var r = (Math.random() * 16) | 0,
-      v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-function getUUID() {
-  let uuid = localStorage.getItem("user_uuid");
-  if (!uuid) {
-    uuid = generateUUID();
-    localStorage.setItem("user_uuid", uuid);
-  }
-  return uuid;
-}
-
 const GlobalStyle = createGlobalStyle`
   body {
     background-color: #000;
@@ -60,18 +42,25 @@ const Select = styled.select`
 function App() {
   const [links, setLinks] = useState([]);
   const [keyword, setKeyword] = useState("");
-  const userUUID = getUUID(); // 사용자 UUID 가져오기
 
   useEffect(() => {
-    axios
-      .get(`http://192.168.1.108:8000/api/links/?user_uuid=${userUUID}`)
-      .then((response) => {
-        setLinks(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, [userUUID]);
+    // URL에서 user_uuid 추출
+    const urlParams = new URLSearchParams(window.location.search);
+    const uuid = urlParams.get("user_uuid");
+
+    if (uuid) {
+      axios
+        .get(`http://192.168.1.108:8000/api/links/?user_uuid=${uuid}`)
+        .then((response) => {
+          setLinks(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    } else {
+      console.error("No UUID found in URL parameters.");
+    }
+  }, []); // 빈 배열을 사용하여, 컴포넌트가 처음 마운트될 때만 실행되도록 설정
 
   const handleKeywordRemove = (link, keyword) => {
     const updatedKeywords = link.keywords.filter((kw) => kw !== keyword);
@@ -134,7 +123,7 @@ function App() {
         links={filteredLinks}
         onKeywordRemove={handleKeywordRemove}
         onKeywordAdd={handleKeywordAdd}
-        onDelete={handleDelete} // 삭제 핸들러를 LinkList로 전달합니다.
+        onDelete={handleDelete}
       />
     </AppContainer>
   );
