@@ -9,12 +9,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-z8uq2hh0)u^sv-4%fm0x(n=5_x$eq+t0)ab6!*_9kmtcfv(o5x'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # 개발 중이므로 True로 변경
+DEBUG = False
 
-ALLOWED_HOSTS = ['43.203.215.42', 'localhost', '127.0.0.1', '192.168.1.108']
+ALLOWED_HOSTS = ['43.203.215.42', 'localhost', '127.0.0.1', '192.168.1.108','khuda-link-deploy.netlify.app']
 
 
 # Application definition
@@ -46,7 +46,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://192.168.1.108:3000",  
+    "http://192.168.1.108:3000",
+    "https://khuda-link-deploy.netlify.app"  
 ]
 
 ROOT_URLCONF = 'link_app.urls'
