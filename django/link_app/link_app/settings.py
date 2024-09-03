@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,12 +10,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = 'django-insecure-z8uq2hh0)u^sv-4%fm0x(n=5_x$eq+t0)ab6!*_9kmtcfv(o5x'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['43.203.215.42', 'localhost', '127.0.0.1', '192.168.1.108','khuda-link-deploy.netlify.app']
+ALLOWED_HOSTS = ['192.168.1.108', 'localhost', '127.0.0.1', '218.209.108.191', '*']
+
 
 
 # Application definition
@@ -32,6 +34,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -39,18 +42,26 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+
 ]
 
 # 로컬 React 앱과 크롬 익스텐션을 허용
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://192.168.1.108:3000",
-    "https://khuda-link-deploy.netlify.app"  
+    "http://192.168.1.108",
+    "http://192.168.1.108:8000",
+    "http://218.209.108.191:3000",  # 공인 IP로 React 앱에서 접근할 때 필요
+    "http://218.209.108.191:8000"   # 공인 IP로 Django API에 접근할 때 필요
 ]
-
 ROOT_URLCONF = 'link_app.urls'
+CSRF_TRUSTED_ORIGINS = [
+    'http://192.168.1.108:8000',
+    'http://218.209.108.191:8000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://218.209.108.191:3000'
+]
 
 TEMPLATES = [
     {
@@ -117,6 +128,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 ROOT_DIR = os.path.dirname(BASE_DIR)
 
 

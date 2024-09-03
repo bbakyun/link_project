@@ -49,13 +49,19 @@ function App() {
     const uuid = urlParams.get("user_uuid");
 
     if (uuid) {
+      // 로컬 IP를 사용하여 API 요청
+      const apiUrl = `http://218.209.108.191:8000/api/links/?user_uuid=${uuid}`;
+
+      console.log("Sending request to API:", apiUrl); // 요청 URL을 로그로 출력
+
       axios
-        .get(`http://192.168.1.108:8000/api/links/?user_uuid=${uuid}`)
+        .get(apiUrl)
         .then((response) => {
+          console.log("Received response:", response.data); // 응답 데이터 로그
           setLinks(response.data);
         })
         .catch((error) => {
-          console.error("Error fetching data:", error);
+          console.error("Error fetching data:", error); // 오류 로그
         });
     } else {
       console.error("No UUID found in URL parameters.");
@@ -66,9 +72,12 @@ function App() {
     const updatedKeywords = link.keywords.filter((kw) => kw !== keyword);
     const updatedLink = { ...link, keywords: updatedKeywords };
 
+    console.log(`Removing keyword ${keyword} from link`, link);
+
     axios
-      .put(`http://192.168.1.108:8000/api/links/${link.id}/`, updatedLink)
+      .put(`http://218.209.108.191:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
+        console.log("Keyword removed, updated link:", response.data);
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
       })
       .catch((error) => {
@@ -79,9 +88,12 @@ function App() {
   const handleKeywordAdd = (link, newKeyword) => {
     const updatedLink = { ...link, keywords: [...link.keywords, newKeyword] };
 
+    console.log(`Adding keyword ${newKeyword} to link`, link);
+
     axios
-      .put(`http://192.168.1.108:8000/api/links/${link.id}/`, updatedLink)
+      .put(`http://218.209.108.191:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
+        console.log("Keyword added, updated link:", response.data);
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
       })
       .catch((error) => {
@@ -90,9 +102,12 @@ function App() {
   };
 
   const handleDelete = (id) => {
+    console.log(`Deleting link with ID ${id}`);
+
     axios
-      .delete(`http://192.168.1.108:8000/api/links/${id}/`)
+      .delete(`http://218.209.108.191:8000/api/links/${id}/`)
       .then(() => {
+        console.log("Link deleted successfully.");
         setLinks(links.filter((link) => link.id !== id));
       })
       .catch((error) => {
@@ -100,11 +115,14 @@ function App() {
       });
   };
 
-  const filteredLinks = keyword
-    ? links.filter((link) => link.keywords.includes(keyword))
-    : links;
+  const filteredLinks =
+    keyword === ""
+      ? links // "All"을 선택했을 때 모든 링크를 보여줌
+      : links.filter((link) => link.keywords.includes(keyword));
 
-  const uniqueKeywords = [...new Set(links.flatMap((link) => link.keywords))];
+  const uniqueKeywords = Array.isArray(links)
+    ? [...new Set(links.flatMap((link) => link.keywords))]
+    : [];
 
   return (
     <AppContainer>
