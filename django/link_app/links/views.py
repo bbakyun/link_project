@@ -1,85 +1,142 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Link
 from .serializers import LinkSerializer
-from keybert import KeyBERT
-from konlpy.tag import Okt
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import numpy as np
-import nltk
-import itertools
 from bs4 import BeautifulSoup
 import requests
 import logging
+import time
+import os
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# nltk punkt tokenizer가 필요한 경우에만 다운로드
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
+# GPT-4o-mini API 설정
+load_dotenv()
+GPT4O_API_KEY = os.getenv("OPENAI_API_KEY")
+GPT4O_API_URL = "https://api.openai.com/v1/chat/completions"
 
-model_dir = "lcw99/t5-base-korean-text-summary"
-tokenizer_t5 = AutoTokenizer.from_pretrained(model_dir)
-model_t5 = AutoModelForSeq2SeqLM.from_pretrained(model_dir, device_map="cpu")
-model_sbert = SentenceTransformer('sentence-transformers/xlm-r-100langs-bert-base-nli-stsb-mean-tokens')
+# 429 Too Many Requests 처리 함수
+def fetch_url_with_retry(url, max_retries=3):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+    }
 
-max_input_length = 512
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 429:  # Too Many Requests
+                retry_after = int(response.headers.get("Retry-After", 5))  # Retry-After 헤더 확인, 기본값 5초
+                logger.warning(f"429 Too Many Requests: Retrying in {retry_after} seconds...")
+                time.sleep(retry_after)
+                continue
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Attempt {attempt + 1} failed: {e}")
+            if attempt + 1 == max_retries:
+                raise e
 
-def keyword_func(doc, top_n, nr_candidates):
-    okt = Okt()
-    tokenized_doc = okt.pos(doc)
-    tokenized_nouns = ' '.join([word[0] for word in tokenized_doc if word[1] == 'Noun'])
-    
-    if not tokenized_nouns.strip():
-        return ["직접 채워주세요"]  
-    
-    n_gram_range = (1, 2)
-    count = CountVectorizer(ngram_range=n_gram_range)
+# Selenium을 사용하여 동적 콘텐츠 로드
+def fetch_dynamic_content(url):
+    from selenium.webdriver.common.by import By
+
+    options = Options()
+    options.add_argument("--headless")  # 브라우저 창을 표시하지 않음
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-extensions")
+    service = Service(r'C:\Users\king7\OneDrive\문서\GitHub\link_project\django\link_app\links\chromedriver.exe')  # ChromeDriver 경로 설정
+
+    driver = webdriver.Chrome(service=service, options=options)
     try:
-        count.fit([tokenized_nouns])
-        candidates = count.get_feature_names_out()
-    except ValueError as e:
-        logger.error("Error in CountVectorizer: %s", e)
-        return ["직접 채워주세요"]  
-    
-    doc_embedding = model_sbert.encode([doc])
-    candidate_embeddings = model_sbert.encode(candidates)
-    distances = cosine_similarity(doc_embedding, candidate_embeddings)
-    distances_candidates = cosine_similarity(candidate_embeddings, candidate_embeddings)
-    words_idx = list(distances.argsort()[0][-nr_candidates:])
-    words_vals = [candidates[index] for index in words_idx]
-    distances_candidates = distances_candidates[np.ix_(words_idx, words_idx)]
-    min_sim = np.inf
-    candidate = None
-    for combination in itertools.combinations(range(len(words_idx)), top_n):
-        sim = sum([distances_candidates[i][j] for i in combination for j in combination if i != j])
-        if sim < min_sim:
-            candidate = combination
-            min_sim = sim
-    blog_keyword = [words_vals[idx] for idx in candidate]
-    return blog_keyword
+        logger.debug(f"Fetching dynamic content from {url}")
+        driver.get(url)
+        time.sleep(2)  # JavaScript 로드 시간을 위해 대기
 
-def summarization(text):
-    inputs = ["summarize: " + text]
-    inputs = tokenizer_t5(inputs, max_length=max_input_length, truncation=True, return_tensors="pt")
-    output = model_t5.generate(**inputs, num_beams=2, max_length=100, length_penalty=2.0, num_return_sequences=1, no_repeat_ngram_size=2)
-    decoded_output = tokenizer_t5.batch_decode(output, skip_special_tokens=True)[0]
-    predicted_title = nltk.sent_tokenize(decoded_output.strip())[0]
-    return predicted_title
+        # iframe으로 전환
+        iframe = driver.find_element(By.ID, "mainFrame")
+        driver.switch_to.frame(iframe)
 
+        # iframe 내부 HTML 가져오기
+        html_content = driver.page_source
+        logger.debug(f"Extracted iframe content: {html_content[:500]}")  # 디버깅용으로 일부만 출력
+        return html_content
+    except Exception as e:
+        logger.error(f"Error while fetching dynamic content: {e}")
+        return None
+    finally:
+        driver.quit()
+
+
+# BeautifulSoup 이미지 추출 함수
 def get_image_url(soup):
     img = soup.find('img')
     if img and img.get('src'):
         return img['src']
     return None
+
+# GPT-4o-mini API 호출 함수 (요약 생성)
+def generate_summary_gpt4o(text):
+    try:
+        prompt = (
+            "Summarize the following text in Korean. Only output the summary without any extra explanations or comments. "
+            "Make the summary concise and focus only on the main points of the text.\n\n"
+            f"Text: {text}\n"
+        )
+
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GPT4O_API_KEY}"
+        }
+        response = requests.post(GPT4O_API_URL, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()['choices'][0]['message']['content'].strip()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"GPT-4o API error: {e}")
+        return "요약 생성에 실패했습니다."
+
+# GPT-4o-mini API 호출 함수 (키워드 추출)
+def extract_keywords_gpt4o(text):
+    try:
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are an expert keyword extractor."},
+                {
+                    "role": "user",
+                    "content": (
+                        "Extract 3 main keywords from the following text. "
+                        "Output the keywords separated by commas without numbering or extra characters.\n\n"
+                        f"Text: {text}"
+                    )
+                },
+            ],
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GPT4O_API_KEY}"
+        }
+        response = requests.post(GPT4O_API_URL, json=payload, headers=headers)
+        response.raise_for_status()
+        keywords = response.json()['choices'][0]['message']['content'].strip()
+        return [kw.strip() for kw in keywords.split(",")]
+    except requests.exceptions.RequestException as e:
+        logger.error(f"GPT-4o API error: {e}")
+        return ["키워드 추출 실패"]
 
 class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
@@ -91,66 +148,22 @@ class LinkViewSet(viewsets.ModelViewSet):
             return Link.objects.filter(user_uuid=user_uuid)
         return super().get_queryset()
 
-    def create(self, request, *args, **kwargs):
-        user_uuid = request.data.get('user_uuid')
-        if not user_uuid:
-            return Response({'error': 'UUID is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        url = request.data.get('url')
-        title = request.data.get('title')
-        description = request.data.get('description')
-        keywords = request.data.get('keywords')
-        image_url = request.data.get('image_url')
-
-        try:
-            # URL과 사용자 UUID 조합이 이미 있는지 확인
-            existing_link = Link.objects.filter(url=url, user_uuid=user_uuid).first()
-            if existing_link:
-                return Response({
-                    'message': 'Link already exists!',
-                    'link_id': existing_link.id,
-                    'title': existing_link.title,
-                    'description': existing_link.description,
-                    'keywords': existing_link.keywords,
-                    'image_url': existing_link.image_url
-                }, status=status.HTTP_200_OK)
-
-            # 새로운 링크 생성
-            link = Link.objects.create(url=url, title=title, description=description, keywords=keywords, image_url=image_url, user_uuid=user_uuid)
-            link.save()
-            return Response({'message': 'Link added successfully!', 'link_id': link.id}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            logger.error("Error adding link: %s", e)
-            return Response({'error': 'An error occurred while adding the link.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            link = self.get_object()
-            link.delete()
-            return Response({'message': 'Link deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            logger.error("Error deleting link: %s", e)
-            return Response({'error': 'An error occurred while deleting the link.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
     @action(detail=False, methods=['post'])
     def extract_from_url(self, request):
         url = request.data.get('url', '')
         user_uuid = request.data.get('user_uuid', None)
 
-        # 디버그 로그 추가
         logger.debug(f"Received URL: {url}")
         logger.debug(f"Received UUID: {user_uuid}")
 
         if not url:
             return Response({'error': 'URL is required'}, status=status.HTTP_400_BAD_REQUEST)
-
         if not user_uuid:
             return Response({'error': 'User UUID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 먼저 데이터베이스에서 해당 URL이 있는지 확인
+        # 데이터베이스에서 URL 확인
         existing_link = Link.objects.filter(url=url, user_uuid=user_uuid).first()
         if existing_link:
-            # 이미 존재하는 링크 데이터를 반환
             return Response({
                 'title': existing_link.title,
                 'summary': existing_link.description,
@@ -159,10 +172,19 @@ class LinkViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_200_OK)
 
         try:
-            # URL에서 콘텐츠를 추출하여 요약 및 키워드 생성
-            response = requests.get(url)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # 네이버 블로그 여부 확인
+            if "blog.naver.com" in url:
+                html_content = fetch_dynamic_content(url)  # Selenium 사용
+            else:
+                response = fetch_url_with_retry(url)  # requests 사용
+                html_content = response.text
+
+            if not html_content:
+                return Response({'error': 'Failed to fetch content'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # 제목 및 본문 추출
             title = soup.title.string if soup.title else 'No Title'
             paragraphs = soup.find_all('p')
             text_content = ' '.join([para.get_text() for para in paragraphs])
@@ -176,8 +198,9 @@ class LinkViewSet(viewsets.ModelViewSet):
                     'image_url': image_url
                 })
 
-            keyword_list = keyword_func(text_content, top_n=3, nr_candidates=24)
-            summary_result = summarization(text_content)
+            # GPT-4o-mini API 호출
+            keyword_list = extract_keywords_gpt4o(text_content)
+            summary_result = generate_summary_gpt4o(text_content)
 
             return Response({
                 'title': title,

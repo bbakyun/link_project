@@ -40,19 +40,24 @@ const Description = styled.p`
 `;
 
 const KeywordsContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: auto;
+  display: grid; /* grid 레이아웃을 사용하여 각 키워드를 분리 */
+  grid-template-columns: repeat(3, 1fr); /* 키워드를 3개의 열로 배치 */
+  gap: 10px; /* 키워드 사이 간격 */
+  margin-top: 10px;
 `;
 
-const Keyword = styled.span`
+const Keyword = styled.div`
   background-color: #ffeb3b;
   color: #000;
   padding: 5px 10px;
   border-radius: 15px;
   font-size: 0.8rem;
+  text-align: center;
   cursor: pointer;
+
+  &:hover {
+    background-color: #ffd700;
+  }
 `;
 
 const KeywordInput = styled.input`
@@ -118,7 +123,6 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
   return (
     <ItemContainer>
       {image_url && <Thumbnail src={image_url} alt={title} />}
-      {/* 제목을 a 태그로 링크 처리 */}
       <Title href={url} target="_blank" rel="noopener noreferrer">
         {title}
       </Title>
