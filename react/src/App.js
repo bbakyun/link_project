@@ -159,11 +159,16 @@ function App() {
         categories={categories}
         selectedCategories={selectedCategories}
         onCategorySelect={(category) => {
-          setSelectedCategories((prev) =>
-            prev.includes(category)
-              ? prev.filter((c) => c !== category)
-              : [...prev, category]
-          );
+          if (category === "ALL") {
+            setSelectedCategories(["ALL"]); // ALL 선택 시 다른 모든 카테고리 초기화
+          } else {
+            setSelectedCategories(
+              (prev) =>
+                prev.includes(category)
+                  ? prev.filter((c) => c !== category) // 카테고리 해제
+                  : [...prev.filter((c) => c !== "ALL"), category] // ALL 제외 후 추가
+            );
+          }
         }}
       />
       <ContentContainer>
