@@ -20,7 +20,7 @@ const AppContainer = styled.div`
 
 const ContentContainer = styled.div`
   flex: 1;
-  padding: 20px;
+  padding: 20px 20px 20px 240px; /* 왼쪽 패딩 추가: 사이드바 너비 고려 */
 `;
 
 const Header = styled.h1`
