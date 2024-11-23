@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import LinkList from "./components/LinkList";
+import Sidebar from "./components/Sidebar";
 import axios from "axios";
 
 const GlobalStyle = createGlobalStyle`
@@ -14,7 +15,11 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const AppContainer = styled.div`
-  text-align: center;
+  display: flex;
+`;
+
+const ContentContainer = styled.div`
+  flex: 1;
   padding: 20px;
 `;
 
@@ -22,6 +27,7 @@ const Header = styled.h1`
   font-size: 3rem;
   margin-bottom: 20px;
   color: #ffeb3b;
+  text-align: center;
 `;
 
 const Separator = styled.hr`
@@ -40,86 +46,108 @@ const Select = styled.select`
 `;
 
 function App() {
-  const [links, setLinks] = useState([]);
-  const [keyword, setKeyword] = useState("");
+  const [links, setLinks] = useState([]); // 링크 데이터
+  const [categories, setCategories] = useState(["ALL"]); // 상위 카테고리 목록
+  const [selectedCategories, setSelectedCategories] = useState(["ALL"]); // 선택된 상위 카테고리
+  const [keyword, setKeyword] = useState(""); // 키워드 필터링
 
+  // 링크 데이터 가져오기
   useEffect(() => {
-    // URL에서 user_uuid 추출
-    const urlParams = new URLSearchParams(window.location.search);
-    const uuid = urlParams.get("user_uuid");
-
-    if (uuid) {
-      // 로컬 IP를 사용하여 API 요청
-      const apiUrl = `http://218.209.109.43:8000/api/links/?user_uuid=${uuid}`;
-
-      console.log("Sending request to API:", apiUrl); // 요청 URL을 로그로 출력
-
-      axios
-        .get(apiUrl)
-        .then((response) => {
-          console.log("Received response:", response.data); // 응답 데이터 로그
+    const fetchLinks = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const uuid = urlParams.get("user_uuid");
+        if (uuid) {
+          const apiUrl = `http://218.209.109.43:8000/api/links/?user_uuid=${uuid}`;
+          const response = await axios.get(apiUrl);
           setLinks(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error); // 오류 로그
-        });
-    } else {
-      console.error("No UUID found in URL parameters.");
-    }
-  }, []); // 빈 배열을 사용하여, 컴포넌트가 처음 마운트될 때만 실행되도록 설정
 
+          // 상위 카테고리 목록 생성
+          const newCategories = [
+            "ALL",
+            ...new Set(response.data.map((link) => link.category || "ALL")),
+          ];
+          setCategories(newCategories);
+        }
+      } catch (error) {
+        console.error("Error fetching links:", error);
+      }
+    };
+
+    fetchLinks();
+  }, []);
+
+  // 상위 카테고리 업데이트
+  const handleCategoryUpdate = (linkId, newCategory) => {
+    const updatedLinks = links.map((link) =>
+      link.id === linkId ? { ...link, category: newCategory } : link
+    );
+    setLinks(updatedLinks);
+
+    // 백엔드로 업데이트 요청
+    axios
+      .put(`http://218.209.109.43:8000/api/links/${linkId}/`, {
+        category: newCategory,
+      })
+      .catch((error) => console.error("Error updating category:", error));
+
+    // 카테고리가 목록에 없으면 추가
+    if (!categories.includes(newCategory) && newCategory !== "ALL") {
+      setCategories([...categories, newCategory]);
+    }
+  };
+
+  // 키워드 관련 핸들러
   const handleKeywordRemove = (link, keyword) => {
     const updatedKeywords = link.keywords.filter((kw) => kw !== keyword);
     const updatedLink = { ...link, keywords: updatedKeywords };
 
-    console.log(`Removing keyword ${keyword} from link`, link);
-
     axios
       .put(`http://218.209.109.43:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
-        console.log("Keyword removed, updated link:", response.data);
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
       })
-      .catch((error) => {
-        console.error("Error updating link:", error);
-      });
+      .catch((error) => console.error("Error updating link:", error));
   };
 
   const handleKeywordAdd = (link, newKeyword) => {
     const updatedLink = { ...link, keywords: [...link.keywords, newKeyword] };
 
-    console.log(`Adding keyword ${newKeyword} to link`, link);
-
     axios
       .put(`http://218.209.109.43:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
-        console.log("Keyword added, updated link:", response.data);
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
       })
-      .catch((error) => {
-        console.error("Error updating link:", error);
-      });
+      .catch((error) => console.error("Error updating link:", error));
   };
 
+  // 링크 삭제
   const handleDelete = (id) => {
-    console.log(`Deleting link with ID ${id}`);
-
     axios
       .delete(`http://218.209.109.43:8000/api/links/${id}/`)
       .then(() => {
-        console.log("Link deleted successfully.");
         setLinks(links.filter((link) => link.id !== id));
       })
-      .catch((error) => {
-        console.error("Error deleting link:", error);
-      });
+      .catch((error) => console.error("Error deleting link:", error));
   };
 
+  // 카테고리 필터링
+  const filteredLinksByCategory =
+    selectedCategories.includes("ALL") || selectedCategories.length === 0
+      ? links
+      : links.filter((link) =>
+          selectedCategories.includes(link.category || "ALL")
+        );
+
+  // 키워드 필터링
   const filteredLinks =
     keyword === ""
-      ? links // "All"을 선택했을 때 모든 링크를 보여줌
-      : links.filter((link) => link.keywords.includes(keyword));
+      ? filteredLinksByCategory
+      : filteredLinksByCategory.filter((link) =>
+          link.keywords.includes(keyword)
+        );
 
+  // 키워드 목록 생성
   const uniqueKeywords = Array.isArray(links)
     ? [...new Set(links.flatMap((link) => link.keywords))]
     : [];
@@ -127,22 +155,36 @@ function App() {
   return (
     <AppContainer>
       <GlobalStyle />
-      <Header>My Links</Header>
-      <Select value={keyword} onChange={(e) => setKeyword(e.target.value)}>
-        <option value="">All</option>
-        {uniqueKeywords.map((kw, index) => (
-          <option key={index} value={kw}>
-            {kw}
-          </option>
-        ))}
-      </Select>
-      <Separator />
-      <LinkList
-        links={filteredLinks}
-        onKeywordRemove={handleKeywordRemove}
-        onKeywordAdd={handleKeywordAdd}
-        onDelete={handleDelete}
+      <Sidebar
+        categories={categories}
+        selectedCategories={selectedCategories}
+        onCategorySelect={(category) => {
+          setSelectedCategories((prev) =>
+            prev.includes(category)
+              ? prev.filter((c) => c !== category)
+              : [...prev, category]
+          );
+        }}
       />
+      <ContentContainer>
+        <Header>My Links</Header>
+        <Select value={keyword} onChange={(e) => setKeyword(e.target.value)}>
+          <option value="">All</option>
+          {uniqueKeywords.map((kw, index) => (
+            <option key={index} value={kw}>
+              {kw}
+            </option>
+          ))}
+        </Select>
+        <Separator />
+        <LinkList
+          links={filteredLinks}
+          onKeywordRemove={handleKeywordRemove}
+          onKeywordAdd={handleKeywordAdd}
+          onDelete={handleDelete}
+          onCategoryUpdate={handleCategoryUpdate}
+        />
+      </ContentContainer>
     </AppContainer>
   );
 }

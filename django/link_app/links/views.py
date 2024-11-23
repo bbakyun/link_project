@@ -31,8 +31,8 @@ def fetch_url_with_retry(url, max_retries=3):
     for attempt in range(max_retries):
         try:
             response = requests.get(url, headers=headers, timeout=10)
-            if response.status_code == 429:  # Too Many Requests
-                retry_after = int(response.headers.get("Retry-After", 5))  # Retry-After 헤더 확인, 기본값 5초
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 5))
                 logger.warning(f"429 Too Many Requests: Retrying in {retry_after} seconds...")
                 time.sleep(retry_after)
                 continue
@@ -48,32 +48,29 @@ def fetch_dynamic_content(url):
     from selenium.webdriver.common.by import By
 
     options = Options()
-    options.add_argument("--headless")  # 브라우저 창을 표시하지 않음
+    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-extensions")
-    service = Service(r'C:\Users\king7\OneDrive\문서\GitHub\link_project\django\link_app\links\chromedriver.exe')  # ChromeDriver 경로 설정
+    service = Service(r'C:\Users\king7\OneDrive\문서\GitHub\link_project\django\link_app\links\chromedriver.exe')
 
     driver = webdriver.Chrome(service=service, options=options)
     try:
         logger.debug(f"Fetching dynamic content from {url}")
         driver.get(url)
-        time.sleep(2)  # JavaScript 로드 시간을 위해 대기
+        time.sleep(2)
 
-        # iframe으로 전환
         iframe = driver.find_element(By.ID, "mainFrame")
         driver.switch_to.frame(iframe)
 
-        # iframe 내부 HTML 가져오기
         html_content = driver.page_source
-        logger.debug(f"Extracted iframe content: {html_content[:500]}")  # 디버깅용으로 일부만 출력
+        logger.debug(f"Extracted iframe content: {html_content[:500]}")
         return html_content
     except Exception as e:
         logger.error(f"Error while fetching dynamic content: {e}")
         return None
     finally:
         driver.quit()
-
 
 # BeautifulSoup 이미지 추출 함수
 def get_image_url(soup):
@@ -142,6 +139,37 @@ class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
     serializer_class = LinkSerializer
 
+    def update(self, request, *args, **kwargs):
+        logger.debug(f"Update request data: {request.data}")
+        partial = kwargs.pop('partial', True)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+
+        if serializer.is_valid():
+            category = serializer.validated_data.get('category', 'ALL')
+            serializer.validated_data['category'] = category.strip() or 'ALL'
+            self.perform_update(serializer)
+            logger.debug(f"Updated instance data: {serializer.data}")
+            return Response(serializer.data)
+
+        logger.error(f"Update validation failed: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Received data for creation: {data}")  # 데이터 로그 출력
+
+        data['category'] = data.get('category', '').strip() or 'ALL'
+        serializer = self.get_serializer(data=data)
+
+        if not serializer.is_valid():
+            logger.error(f"Validation failed: {serializer.errors}")  # 에러 로그 추가
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     def get_queryset(self):
         user_uuid = self.request.query_params.get('user_uuid')
         if user_uuid:
@@ -161,30 +189,22 @@ class LinkViewSet(viewsets.ModelViewSet):
         if not user_uuid:
             return Response({'error': 'User UUID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 데이터베이스에서 URL 확인
         existing_link = Link.objects.filter(url=url, user_uuid=user_uuid).first()
         if existing_link:
             return Response({
+                'id': existing_link.id,
                 'title': existing_link.title,
                 'summary': existing_link.description,
                 'keywords': existing_link.keywords,
-                'image_url': existing_link.image_url
+                'image_url': existing_link.image_url,
+                'category': existing_link.category or 'ALL',
             }, status=status.HTTP_200_OK)
 
         try:
-            # 네이버 블로그 여부 확인
-            if "blog.naver.com" in url:
-                html_content = fetch_dynamic_content(url)  # Selenium 사용
-            else:
-                response = fetch_url_with_retry(url)  # requests 사용
-                html_content = response.text
+            response = fetch_url_with_retry(url)
+            html_content = response.text
 
-            if not html_content:
-                return Response({'error': 'Failed to fetch content'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
             soup = BeautifulSoup(html_content, 'html.parser')
-
-            # 제목 및 본문 추출
             title = soup.title.string if soup.title else 'No Title'
             paragraphs = soup.find_all('p')
             text_content = ' '.join([para.get_text() for para in paragraphs])
@@ -198,7 +218,6 @@ class LinkViewSet(viewsets.ModelViewSet):
                     'image_url': image_url
                 })
 
-            # GPT-4o-mini API 호출
             keyword_list = extract_keywords_gpt4o(text_content)
             summary_result = generate_summary_gpt4o(text_content)
 

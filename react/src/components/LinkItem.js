@@ -6,7 +6,7 @@ const ItemContainer = styled.div`
   border-radius: 8px;
   padding: 10px;
   margin: 10px;
-  width: 250px; /* 박스의 고정된 너비 설정 */
+  width: 250px;
   text-align: left;
   background-color: #222;
   display: flex;
@@ -16,8 +16,8 @@ const ItemContainer = styled.div`
 
 const Thumbnail = styled.img`
   width: 100%;
-  height: 150px; /* 썸네일 고정 높이 설정 */
-  object-fit: cover; /* 썸네일 비율을 유지하며 크기 조정 */
+  height: 150px;
+  object-fit: cover;
   border-radius: 4px;
 `;
 
@@ -26,7 +26,8 @@ const Title = styled.a`
   color: #ffeb3b;
   margin: 10px 0;
   text-decoration: none;
-  white-space: normal; /* 여러 줄로 표시될 수 있도록 설정 */
+  white-space: normal;
+
   &:hover {
     text-decoration: underline;
   }
@@ -40,9 +41,9 @@ const Description = styled.p`
 `;
 
 const KeywordsContainer = styled.div`
-  display: grid; /* grid 레이아웃을 사용하여 각 키워드를 분리 */
-  grid-template-columns: repeat(3, 1fr); /* 키워드를 3개의 열로 배치 */
-  gap: 10px; /* 키워드 사이 간격 */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   margin-top: 10px;
 `;
 
@@ -93,16 +94,65 @@ const DeleteButton = styled.button`
   cursor: pointer;
 `;
 
-function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
-  const { id, image_url, title, description, keywords, url } = link; // `url` 추가
+const CategoryButton = styled.button`
+  background-color: #87cefa;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 5px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+
+  &:hover {
+    background-color: #00bfff;
+  }
+`;
+
+const CategoryInput = styled.input`
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 5px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+`;
+
+function LinkItem({
+  link,
+  onKeywordRemove,
+  onKeywordAdd,
+  onDelete,
+  onCategoryUpdate,
+}) {
+  const { id, image_url, title, description, keywords, url, category } = link;
+  const [categoryEdit, setCategoryEdit] = useState(false);
+  const [newCategory, setNewCategory] = useState(category || "ALL");
   const [newKeyword, setNewKeyword] = useState("");
 
+  // 상위 카테고리 입력 처리
+  const handleCategoryEdit = (event) => {
+    if (
+      event.type === "blur" ||
+      (event.type === "keypress" && event.key === "Enter")
+    ) {
+      if (newCategory.trim() !== category) {
+        // 공백을 제거한 값 비교
+        onCategoryUpdate(id, newCategory.trim() || "ALL"); // 빈 값은 "ALL"로 처리
+      }
+      setCategoryEdit(false);
+    }
+  };
+
+  // 키워드 제거
   const handleKeywordRemove = (keyword) => {
     if (window.confirm(`해당 키워드를 지우시겠습니까?`)) {
       onKeywordRemove(link, keyword);
     }
   };
 
+  // 키워드 추가
   const handleKeywordAdd = () => {
     if (
       newKeyword &&
@@ -114,6 +164,7 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
     }
   };
 
+  // 링크 삭제
   const handleDelete = () => {
     if (window.confirm("이 링크를 삭제하시겠습니까?")) {
       onDelete(id);
@@ -122,6 +173,19 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
 
   return (
     <ItemContainer>
+      {categoryEdit ? (
+        <CategoryInput
+          type="text"
+          value={newCategory}
+          onChange={(e) => setNewCategory(e.target.value)}
+          onBlur={handleCategoryEdit}
+          onKeyPress={handleCategoryEdit} // Enter 키 처리
+        />
+      ) : (
+        <CategoryButton onClick={() => setCategoryEdit(true)}>
+          {newCategory}
+        </CategoryButton>
+      )}
       {image_url && <Thumbnail src={image_url} alt={title} />}
       <Title href={url} target="_blank" rel="noopener noreferrer">
         {title}
