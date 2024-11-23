@@ -21,11 +21,15 @@ const Thumbnail = styled.img`
   border-radius: 4px;
 `;
 
-const Title = styled.h2`
+const Title = styled.a`
   font-size: 1.2rem;
   color: #ffeb3b;
   margin: 10px 0;
+  text-decoration: none;
   white-space: normal; /* 여러 줄로 표시될 수 있도록 설정 */
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const Description = styled.p`
@@ -85,7 +89,7 @@ const DeleteButton = styled.button`
 `;
 
 function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
-  const { id, image_url, title, description, keywords } = link;
+  const { id, image_url, title, description, keywords, url } = link; // `url` 추가
   const [newKeyword, setNewKeyword] = useState("");
 
   const handleKeywordRemove = (keyword) => {
@@ -114,7 +118,10 @@ function LinkItem({ link, onKeywordRemove, onKeywordAdd, onDelete }) {
   return (
     <ItemContainer>
       {image_url && <Thumbnail src={image_url} alt={title} />}
-      <Title>{title}</Title>
+      {/* 제목을 a 태그로 링크 처리 */}
+      <Title href={url} target="_blank" rel="noopener noreferrer">
+        {title}
+      </Title>
       <Description>{description}</Description>
       <KeywordsContainer>
         {keywords.map((kw, index) => (
