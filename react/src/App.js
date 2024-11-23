@@ -6,11 +6,36 @@ import axios from "axios";
 
 const GlobalStyle = createGlobalStyle`
   body {
-    background-color: #000;
-    color: #fff;
-    font-family: Arial, sans-serif;
+    background-color: #f5f5f5; /* 밝은 배경 */
+    color: #333; /* 기본 텍스트 색상 */
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
+  }
+
+  h1 {
+    color: #0056b3; /* 헤더 강조 색상 */
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  a {
+    color: #0056b3; /* 링크 색상 */
+    text-decoration: none;
+    font-weight: bold;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  button {
+    font-family: inherit;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 15px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
   }
 `;
 
@@ -24,10 +49,14 @@ const ContentContainer = styled.div`
 `;
 
 const Header = styled.h1`
-  font-size: 3rem;
+  font-size: 2.5rem;
   margin-bottom: 20px;
-  color: #ffeb3b;
+  color: #0056b3; /* 블루 */
   text-align: center;
+  background: #ffffff; /* 흰 배경 */
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 `;
 
 const Separator = styled.hr`
@@ -37,11 +66,13 @@ const Separator = styled.hr`
 `;
 
 const Select = styled.select`
-  background-color: #333;
-  color: #fff;
-  border: 1px solid #555;
+  background-color: #ffffff; /* 흰 배경 */
+  color: #333; /* 텍스트 색상 */
+  border: 1px solid #ccc; /* 테두리 색상 */
   padding: 10px;
+  border-radius: 8px;
   font-size: 1rem;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 `;
 

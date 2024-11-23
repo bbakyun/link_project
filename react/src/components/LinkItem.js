@@ -2,31 +2,35 @@ import React, { useState } from "react";
 import styled from "styled-components";
 
 const ItemContainer = styled.div`
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 10px;
-  margin: 10px;
-  width: 250px;
+  background-color: #ffffff; /* 흰색 카드 배경 */
+  border-radius: 10px; /* 둥근 모서리 */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+  padding: 20px;
+  margin: 15px;
+  width: 300px; /* 넉넉한 너비 */
   text-align: left;
-  background-color: #222;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); /* Hover 시 그림자 증가 */
+    transform: translateY(-5px); /* 살짝 위로 이동 */
+  }
 `;
 
 const Thumbnail = styled.img`
   width: 100%;
-  height: 150px;
+  height: 160px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 8px;
 `;
 
 const Title = styled.a`
   font-size: 1.2rem;
-  color: #ffeb3b;
+  color: #007bff; /* 링크 색상 */
   margin: 10px 0;
   text-decoration: none;
-  white-space: normal;
 
   &:hover {
     text-decoration: underline;
@@ -36,7 +40,7 @@ const Title = styled.a`
 const Description = styled.p`
   font-size: 0.9rem;
   margin: 10px 0;
-  color: #fff;
+  color: #000;
   overflow: hidden;
 `;
 
@@ -73,25 +77,35 @@ const KeywordInput = styled.input`
 `;
 
 const AddKeywordButton = styled.button`
-  background-color: #ffeb3b;
-  color: #000;
+  background-color: #007bff; /* 기본 버튼 */
+  color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 5px 10px;
-  font-size: 0.8rem;
-  margin-top: 5px;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  margin-top: 10px;
   cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #0056b3; /* Hover 시 색상 변경 */
+  }
 `;
 
 const DeleteButton = styled.button`
-  background-color: #ff0000;
+  background-color: #ff4d4d; /* 삭제 버튼 */
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 5px 10px;
-  font-size: 0.8rem;
-  margin-top: 5px;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  margin-top: 10px;
   cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #e60000; /* Hover 시 더 진한 레드 */
+  }
 `;
 
 const CategoryButton = styled.button`

@@ -3,17 +3,15 @@ import styled from "styled-components";
 
 const SidebarContainer = styled.div`
   position: fixed;
-  left: 20px; /* 화면 왼쪽에서의 간격 */
-  top: 50%; /* 화면 중앙 */
-  transform: translateY(-50%); /* 세로 정중앙 정렬 */
-  background-color: #222;
-  color: #fff;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background: #ffffff; /* 흰색 배경 */
+  border-radius: 15px; /* 더 둥글게 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
   padding: 20px;
-  border-radius: 50px; /* 둥근 타원형 모양 */
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5); /* 그림자 효과 */
-  width: 200px; /* 사이드바 너비 */
-  z-index: 1000; /* 다른 요소보다 위에 위치하도록 */
-  transition: all 0.3s ease; /* 애니메이션 효과 */
+  width: 220px;
+  transition: all 0.3s ease;
 `;
 
 const CategoryHeader = styled.h3`
@@ -24,19 +22,23 @@ const CategoryHeader = styled.h3`
 `;
 
 const CategoryButton = styled.button`
-  background-color: ${(props) => (props.active ? "#87CEFA" : "#555")};
-  color: ${(props) => (props.active ? "#000" : "#fff")};
+  background-color: ${(props) => (props.active ? "#007bff" : "#e0e0e0")};
+  color: ${(props) => (props.active ? "#fff" : "#333")};
   border: none;
-  border-radius: 20px; /* 버튼도 둥근 모양 */
+  border-radius: 8px;
   padding: 10px;
   margin-bottom: 10px;
   cursor: pointer;
+  font-size: 1rem;
   font-weight: ${(props) => (props.active ? "bold" : "normal")};
   width: 100%;
-  text-align: center;
+  text-align: left;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 
   &:hover {
-    background-color: ${(props) => (props.active ? "#00BFFF" : "#666")};
+    background-color: #0056b3; /* 선택 색상 */
+    color: #fff;
+    transform: scale(1.05); /* 살짝 커짐 */
   }
 `;
 
