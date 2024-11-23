@@ -87,7 +87,7 @@ def generate_summary_gpt4o(text):
     try:
         prompt = (
             "Summarize the following text in Korean. Only output the summary without any extra explanations or comments. "
-            "Make the summary concise and focus only on the main points of the text.\n\n"
+            "The summary should be concise, focus only on the main points, and stay within approximately 350 characters in length.\n\n"
             f"Text: {text}\n"
         )
 
