@@ -215,7 +215,7 @@ class LinkViewSet(viewsets.ModelViewSet):
                     'title': title,
                     'summary': "직접 채워주세요",
                     'keywords': ["직접 채워주세요"],
-                    'image_url': image_url
+                    'image_url': None
                 })
 
             keyword_list = extract_keywords_gpt4o(text_content)

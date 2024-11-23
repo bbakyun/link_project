@@ -12,6 +12,3 @@ class LinkSerializer(serializers.ModelSerializer):
         model = Link
         fields = '__all__'
 
-    def validate_category(self, value):
-        logger.debug(f"Validating category: {value}")  # 검증 중 값 로깅
-        return value.strip() or "ALL"  # 빈 값이면 "ALL" 반환
