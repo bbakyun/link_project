@@ -50,7 +50,7 @@ function App() {
 
     if (uuid) {
       // 로컬 IP를 사용하여 API 요청
-      const apiUrl = `http://218.209.108.191:8000/api/links/?user_uuid=${uuid}`;
+      const apiUrl = `http://218.209.109.43:8000/api/links/?user_uuid=${uuid}`;
 
       console.log("Sending request to API:", apiUrl); // 요청 URL을 로그로 출력
 
@@ -75,7 +75,7 @@ function App() {
     console.log(`Removing keyword ${keyword} from link`, link);
 
     axios
-      .put(`http://218.209.108.191:8000/api/links/${link.id}/`, updatedLink)
+      .put(`http://218.209.109.43:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
         console.log("Keyword removed, updated link:", response.data);
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
@@ -91,7 +91,7 @@ function App() {
     console.log(`Adding keyword ${newKeyword} to link`, link);
 
     axios
-      .put(`http://218.209.108.191:8000/api/links/${link.id}/`, updatedLink)
+      .put(`http://218.209.109.43:8000/api/links/${link.id}/`, updatedLink)
       .then((response) => {
         console.log("Keyword added, updated link:", response.data);
         setLinks(links.map((l) => (l.id === link.id ? response.data : l)));
@@ -105,7 +105,7 @@ function App() {
     console.log(`Deleting link with ID ${id}`);
 
     axios
-      .delete(`http://218.209.108.191:8000/api/links/${id}/`)
+      .delete(`http://218.209.109.43:8000/api/links/${id}/`)
       .then(() => {
         console.log("Link deleted successfully.");
         setLinks(links.filter((link) => link.id !== id));

@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const url = tabs[0].url;
 
-    fetch("http://218.209.108.191:8000/api/extract_from_url/", {
+    fetch("http://218.209.109.43:8000/api/extract_from_url/", {
       // Django 서버의 공인 IP 주소 사용
       method: "POST",
       headers: {
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementsByClassName("keyword-button")
           ).map((button) => button.innerText);
 
-          fetch("http://218.209.108.191:8000/api/links/", {
+          fetch("http://218.209.109.43:8000/api/links/", {
             // Django 서버의 공인 IP 주소 사용
             method: "POST",
             headers: {
@@ -100,6 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // "My Links" 버튼 클릭 시 React 앱으로 이동
   mylinksButton.addEventListener("click", () => {
-    window.open(`http://218.209.108.191:3000?user_uuid=${userUUID}`); // React 앱의 URL 사용
+    window.open(`http://218.209.109.43:3000?user_uuid=${userUUID}`); // React 앱의 URL 사용
   });
 });
